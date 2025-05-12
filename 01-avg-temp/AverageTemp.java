@@ -1,6 +1,8 @@
 import java.util.Scanner;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class AverageTemp {
 
@@ -10,44 +12,53 @@ public class AverageTemp {
     public static void main(String[] args) {
         System.out.println("\n*** Welcome to the Temperature Calculator ***");
         
-        // crate a new array list to store temperatures
-        List<Double> temperatures = new ArrayList<>();
+        // crate a new list to store temperatures (user input)
+        List<Double> tempList = new ArrayList<>();
         // create a new instance of TemperatureInputReader
         TemperatureInputReader reader = new TemperatureInputReader();
 
         // read temperatures
         Double temp;
         int count = 0;
-        System.out.println("\nPlease enter the temperatures below (" + END_INPUT + " to finish):");
+        System.out.println("\nPlease enter the temperatures below (" + END_INPUT + " to finish):");        
 
         // loop to read temperatures, until user enters -end, adding each one to the list
         while ((temp = reader.readTemperature("\n--> Value " + (count + 1) + ": ")) != null) {
             count++;
-            temperatures.add(temp);
+            tempList.add(temp);
             System.out.println("Temperature " + count + " added: " + temp);
         }
 
-        if (temperatures.size() == 0) {  
+        // validate
+        if (tempList.isEmpty()) {  
             System.out.println("\nNo temperature values were entered, goodbye!\n");
             return;
-        } else {
-            System.out.println("\nYou entered total of [" + count + "] temperatures.");
-            System.out.println("The values are:   " + temperatures);
-            System.out.println("Sorted ascending: " + TemperatureCalculator.sortTemperatures(temperatures));
+        }
+        
+        // convert to a primitive array of doubles
+        double[] temperatures = new double[tempList.size()];
+        for (int i = 0; i < temperatures.length; i++) {
+            temperatures[i] = tempList.get(i);
         }
 
+        System.out.println("\nYou entered total of [" + temperatures.length + "] temperatures.");
+        System.out.println("The values are:   " + Arrays.toString(temperatures));
+        
         // no real reason to have a try here, as the input is already validated, but do it anyway
         try {
-            double mean = TemperatureCalculator.calculateMean(temperatures);
-            double median = TemperatureCalculator.calculateMedian(temperatures);
-            int aboveMeanCount = TemperatureCalculator.countAboveMean(temperatures, mean);
+            double sortedTemperatures[] = TemperatureCalculator.sortTemperatures(temperatures);
+            System.out.println("Sorted ascending: " + Arrays.toString(sortedTemperatures));
+
+            double meanTemp = TemperatureCalculator.calculateMean(temperatures);
+            double medianTemp = TemperatureCalculator.calculateMedian(sortedTemperatures);
+            int aboveMeanCount = TemperatureCalculator.countAboveMean(temperatures, meanTemp);
 
             System.out.println("\n--> Results:");
-            System.out.printf("    Mean (average) temperature:  %.2f degrees\n", mean);
-            System.out.printf("    Median temperature:          %.2f degrees\n", median);
+            System.out.printf("    Mean (average) temperature:  %.2f degrees\n", meanTemp);
+            System.out.printf("    Median temperature:          %.2f degrees\n", medianTemp);
             System.out.printf("    Number of values above mean: %d\n\n", aboveMeanCount);
         } catch (IllegalArgumentException e) {
-            System.err.println("Input error: " + e.getMessage());
+            System.err.println("<!> Error: " + e.getMessage());
         } 
 
     }
@@ -75,6 +86,7 @@ class TemperatureInputReader {
             return Double.parseDouble(input);
         } catch (NumberFormatException e) {
             System.out.println("Invalid input. Please enter a valid number (or " + AverageTemp.END_INPUT + ")");
+            
             // recursive call to readTemperature to allow user to re-enter
             return readTemperature(message);
         }
@@ -87,7 +99,7 @@ class TemperatureCalculator {
     private static final String ERROR_MESSAGE = "Temperature array cannot be null or empty";
 
     // method to calculate the average temperature
-    public static double calculateMean(List<Double> temperatures) {
+    public static double calculateMean(double[] temperatures) {
         
         validateTemperatureList(temperatures);
         
@@ -95,11 +107,11 @@ class TemperatureCalculator {
         for (double temp : temperatures) {
             sum += temp;
         }
-        return sum / temperatures.size();
+        return sum / temperatures.length;
     }
 
     // method to count the number of temperature entries which are above the average
-    public static int countAboveMean(List<Double> temperatures, double mean) {
+    public static int countAboveMean(double[] temperatures, double mean) {
 
         validateTemperatureList(temperatures);
 
@@ -111,34 +123,34 @@ class TemperatureCalculator {
     }
 
     // overload to ascending sort to be default
-    public static List<Double> sortTemperatures(List<Double> temperatures) {
+    public static double[] sortTemperatures(double[] temperatures) {
         return sortTemperatures(temperatures, false);
     }
 
     // sort with order control
-    public static List<Double> sortTemperatures(List<Double> temperatures, boolean descending) {
+    public static double[] sortTemperatures(double[] temperatures, boolean descending) {
         
         validateTemperatureList(temperatures);
         
-        // copy to a new array 
-        List<Double> sorted = new ArrayList<>(temperatures);
+        // make a copy of the array
+        double[] sorted = Arrays.copyOf(temperatures, temperatures.length);
 
-        int n = sorted.size();
+        int n = sorted.length;
 
-        // bubble sort
+        // bubble sort, proably not optimal, but simple classic sort algorithm
         for (int i = 0; i < n-1; i++) {
             for (int j = 0; j < n-i-1; j++) {
                 boolean shouldSwap = descending ? 
                     // descending
-                    (sorted.get(j) < sorted.get(j+1)) : 
+                    (sorted[j] < sorted[j+1]) : 
                     // ascending
-                    (sorted.get(j) > sorted.get(j+1)); 
+                    (sorted[j] > sorted[j+1]); 
                     
                 if (shouldSwap) {
                     // swap elements
-                    Double temp = sorted.get(j);
-                    sorted.set(j, sorted.get(j+1));
-                    sorted.set(j+1, temp);
+                    double temp = sorted[j];
+                    sorted[j] = sorted[j+1];
+                    sorted[j+1] =  temp;
                 }
             }
         }
@@ -146,24 +158,25 @@ class TemperatureCalculator {
         return sorted;
     }
 
-    // helper method to calculate median
-    public static double calculateMedian(List<Double> temperatures) {
+    // helper method to calculate median, assumes the array is already sorted
+    public static double calculateMedian(double[] sortedTemperatures) {
 
-        validateTemperatureList(temperatures);
-
-        List<Double> sorted = sortTemperatures(temperatures);
+        validateTemperatureList(sortedTemperatures);
         
-        int size = sorted.size();
-        if (size % 2 == 1) {
-            return sorted.get(size / 2);
+        int n = sortedTemperatures.length;
+
+        if (n % 2 == 1) {
+            // n odd, return the middle value
+            return sortedTemperatures[n / 2];
         } else {
-            return (sorted.get(size / 2 - 1) + sorted.get(size / 2)) / 2.0;
+            // n even, average of the two middle values
+            return (sortedTemperatures[n / 2 - 1] + sortedTemperatures[n / 2]) / 2.0;
         }
     }
 
     // method to validate the temperature list
-    private static void validateTemperatureList(List<Double> temperatures) {
-        if (temperatures == null || temperatures.isEmpty()) {
+    private static void validateTemperatureList(double[] temperatures) {
+        if (temperatures == null || temperatures.length == 0) {
             throw new IllegalArgumentException(ERROR_MESSAGE);
         }
     }
