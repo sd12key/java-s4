@@ -349,7 +349,7 @@ public class NotepadApp {
         notepad.redo();
         System.out.println(notepad.getElements() + "\nCan undo: " + notepad.canUndo() + "\nCan redo: " + notepad.canRedo());        
 
-        System.out.println("\nUNDO 3x (expect A and A.5)");
+        System.out.println("\nUNDO 3x (expect A and B)");
         notepad.undo();
         notepad.undo();
         notepad.undo();
